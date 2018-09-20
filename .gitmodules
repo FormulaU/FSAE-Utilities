@@ -1,0 +1,3 @@
+[submodule "CAN_bus_pirate/pyBusPirateLite"]
+	path = CAN_bus_pirate/pyBusPirateLite
+	url = https://github.com/juhasch/pyBusPirateLite.git

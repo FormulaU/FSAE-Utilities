@@ -2,6 +2,7 @@ from scipy import misc
 import imageio
 import numpy
 import os
+from copy import deepcopy
 
 track_thresh = 300
 border = 5
@@ -34,6 +35,13 @@ class track_fill:
 				pixel = (row,col)
 				if pixel not in self.all_pixels:
 					self.add_fill(pixel)
+
+		#Iterate through our fills. For our black fills, minimize them.
+		for fill in self.fills:
+			pixel = fill.pixels.pop()
+			fill.add(pixel)
+			if self.image[pixel[0]][pixel[1]] == 0:
+				self.minimize(fill)
 
 		#Find the only whitespace fill with more than one neighbor. That's the inside of the track. 
 		for fill in self.fills:
@@ -114,12 +122,32 @@ class track_fill:
 		for n in fill.pixels:
 			self.image[n[0]][n[1]] = color
 
+	def minimize(self, fill):
+		fill_copy = deepcopy(fill)
+		for pixel in fill_copy.pixels:
+			#Test to make sure the pixel is required. Find the neighbors for this pixel. If this pixel has more than one neighbor, it is required. If it doesn't, it isn't, and should be turned white.
+			neighbors = self.find_pixel_neighbors(pixel, fill)
+			if len(neighbors) == 1:
+				print("Whiting out " + str(pixel))
+				self.image[pixel[0]][pixel[1]] = 255
+				fill.pixels.remove(pixel)
+				neighbors.pop().add(pixel)
+	
+	def find_pixel_neighbors(self, pixel, fill=None,):
+		if fill is None:
+			fill = self.find_fill(pixel)
+		neighbors = set()
+		for n in self.get_neighbors(pixel):
+			if n not in fill.pixels:
+				neighbors.add(self.find_fill(n))
+		return neighbors
+		
 class fill:
 	def __init__(self):
 		self.pixels = set()
 		self.neighbors = set()
 		self.neighbor_pixels = set()
-	
+
 	def add(self, pixel):
 		self.pixels.add(pixel)
 	
