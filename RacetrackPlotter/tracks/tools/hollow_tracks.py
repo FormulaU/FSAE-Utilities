@@ -5,7 +5,7 @@ import os
 
 track_thresh = 300
 border = 5
-base_path = '../images/gen/tracks/' 
+base_path = '../images/gen/upscaled/' 
 def main():	
 	for filename in os.listdir(base_path):
 		hollow_track(base_path, filename)
