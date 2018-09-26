@@ -75,13 +75,9 @@ class fill:
 
 def get_neighbors(pixel):
 	neighbors = []
-	neighbors += [(pixel[0]-1, pixel[1]+1)]
 	neighbors += [(pixel[0]-1, pixel[1])]
-	neighbors += [(pixel[0]-1, pixel[1]-1)]
 	neighbors += [(pixel[0], pixel[1]-1)]
-	neighbors += [(pixel[0]+1, pixel[1]-1)]
 	neighbors += [(pixel[0]+1, pixel[1])]
-	neighbors += [(pixel[0]+1, pixel[1]+1)]
 	neighbors += [(pixel[0], pixel[1]+1)]
 	return neighbors
 
