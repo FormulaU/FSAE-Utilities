@@ -1,4 +1,5 @@
 from scipy import misc
+from scipy import spatial
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 import imageio
@@ -8,7 +9,7 @@ import csv
 
 track_thresh = 300
 border = 5
-img_base_path = '../images/gen/hollow_tracks/' 
+img_base_path = '../images/gen/filled_tracks/' 
 pt_base_path = '../data/gen/point_list/'
 inner_color = 128
 
@@ -98,14 +99,28 @@ def floodfill_order(pt_set):
 	ret = [pt_set.pop()]
 	found_points = set(ret)
 	while len(found_points) != len(pt_set):
+		length = len(ret)
 		for pix in get_neighbors(ret[-1]):
 			if pix in pt_set: 
 				if pix not in found_points:
 					ret += [pix]
 					found_points.add(pix)
-
+		if length == len(ret):
+			print("Path is self-intersecting")
+			return get_convex_hull(pt_set)
 #		print(str(len(found_points)) + ', ' + str(len(pt_set)))
 #	print(ret)
+	return ret
+
+def get_convex_hull(pt_set):
+	points = []
+	for pt in pt_set:
+		points += [[pt[0], pt[1]]]
+	hull = spatial.ConvexHull(points)
+	ret = []
+	for idx in hull.vertices:
+		ret += [points[idx]]
+	print(ret)
 	return ret
 
 def get_neighbors(pixel):

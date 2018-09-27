@@ -6,7 +6,7 @@ from copy import deepcopy
 
 track_thresh = 300
 border = 5
-base_path = '../images/gen/hollow_tracks/' 
+base_path = '../images/gen/upscaled/' 
 inner_color = 128
 min_inner_size = 20
 
@@ -37,17 +37,25 @@ class track_fill:
 				pixel = (row,col)
 				if pixel not in self.all_pixels:
 					self.add_fill(pixel)
-		
+
+		#Find our track.
+		for idx in range(len(self.fills)):
+			fill = self.fills[idx]
+			pixel = fill.pixels.pop()
+			fill.add(pixel)
+			if self.image[pixel[0]][pixel[1]] == self.BLACK:
+				self.track = fill
+				del self.fills[idx]
+
 		#Eliminate every fill that has fewer than min_inner_size_pixels.
 		for fill in self.fills:
 			pixel = fill.pixels.pop()
 			fill.add(pixel)
 			if self.image[pixel[0]][pixel[1]] == self.WHITE:
-		#If our fill is less than min_inner_size, wipe its (theoretically only) neighbor out.
+		#If our fill is less than min_inner_size, wipe that fill out and merge it with the track..
 					if len(fill.pixels) < min_inner_size:
-						for neighbor in fill.neighbors:
-							print("Wiping out a fill of size " + str(len(fill.pixels)))
-							self.fill_area(neighbor, self.WHITE)
+						self.fill_area(fill, self.BLACK)
+						self.merge_fills(fill, self.track)
 
 		#Iterate through our fills. For our black fills, minimize them.	
 		for fill in self.fills:
@@ -154,7 +162,12 @@ class track_fill:
 			if n not in fill.pixels:
 				neighbors.add(self.find_fill(n))
 		return neighbors
-		
+
+	def merge_fills(self, fill1, fill2):
+		idx1 = self.fills.index(fill1)
+		idx2 = self.fills.index(fill2)
+		fill1.merge(fill2)
+		del self.fills[idx2]
 class fill:
 	def __init__(self):
 		self.pixels = set()
@@ -175,7 +188,11 @@ class fill:
 
 	def count_neighbors(self):
 		return len(self.neighbors)
-
+	
+	def merge(self, other):
+		self.pixels |= other.pixels
+		self.neighbors |= other.neighbors
+		self.neighbor_pixels |= other.neighbor_pixels
 
 if __name__ == '__main__':
 	main()
