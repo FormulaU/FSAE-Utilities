@@ -42,13 +42,13 @@ class track_fill:
 		for fill in self.fills:
 			pixel = fill.pixels.pop()
 			fill.add(pixel)
-			if self.image[pixel[0]][pixel[1]] == self.WHITE:
+#			if self.image[pixel[0]][pixel[1]] == self.WHITE:
 		#If our fill is less than min_inner_size, wipe its (theoretically only) neighbor out.
-					if len(fill.pixels) < min_inner_size:
-						for neighbor in fill.neighbors:
-							print("Wiping out a fill of size " + str(len(fill.pixels)))
-							self.fill_area(neighbor, self.WHITE)
-
+#					if len(fill.pixels) < min_inner_size:
+#						for neighbor in fill.neighbors:
+#							print("Wiping out a fill of size " + str(len(fill.pixels)))
+#							self.fill_area(neighbor, self.WHITE)
+#
 		#Iterate through our fills. For our black fills, minimize them.	
 		for fill in self.fills:
 			pixel = fill.pixels.pop()
