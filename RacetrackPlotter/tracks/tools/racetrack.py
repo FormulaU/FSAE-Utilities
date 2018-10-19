@@ -1,6 +1,6 @@
 class racetrack:
 	def __init__(self):
-		self.outer_paths = None
+		self.outer_path = None
 		self.inner_paths = []
 		self.bound_paths = []
 class path_t:
