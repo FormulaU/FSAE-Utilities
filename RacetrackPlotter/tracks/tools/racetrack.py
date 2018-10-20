@@ -1,5 +1,6 @@
 class racetrack:
 	def __init__(self):
+		self.filepath = None
 		self.outer_path = None
 		self.inner_paths = []
 		self.bound_paths = []

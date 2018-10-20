@@ -24,16 +24,17 @@ def main():
 		vectorize(base_path, filename)
 
 def vectorize(path, name):
-	print(path+name)
 	f = imageio.imread(path+name, pilmode='L')
 	#Find border paths, save to file.
-	track = build_track(f, name)
+	track = build_track(f, path, name)
 	#Replace .png in the string with .p
 	name = name.replace(".png", ".p")
 	pickle.dump(track, open(target_path+name, "wb"))
 
-def build_track(image, name):
+def build_track(image, path, name):
 	track = racetrack()
+	track.filepath = path+name
+	print(track.filepath)
 	#Scan through the image, looking for paths and painting them as we find them.
 	loops = []
 	outer_path = None
