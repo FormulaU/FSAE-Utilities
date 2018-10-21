@@ -8,7 +8,8 @@ from racetrack import path_t
 import pickle
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
-from scipy.optimize import minimize_scalar
+#from scipy.optimize import minimize_scalar
+from scipy.optimize import basinhopping
 
 base_path = '../data/gen/converted_tracks/'
 target_path = '../data/gen/sectionized_tracks/'
@@ -32,7 +33,6 @@ def sectionize(base_path, filename):
 		out_x = track.outer_path.x[idx]
 		out_y = track.outer_path.y[idx]
 		out_t = track.outer_path.t[idx]
-		
 		#Best values
 		best_sqdist = numpy.inf
 		best_t = None
@@ -43,11 +43,12 @@ def sectionize(base_path, filename):
 		for inner_track in track.inner_paths:
 			optimize = lambda t: (inner_track.x_cs(t)-out_x)**2+(inner_track.y_cs(t)-out_y)**2
 			#Function is periodic, use constrained optimization.
-			res = minimize_scalar(optimize, bounds=(0,1))
+#			res = minimize_scalar(optimize, bounds=(0,1))
+			res = basinhopping(optimize, out_t, niter=40, minimizer_kwargs={"method" : "L-BFGS-B", "bounds" : [(0,1)]})
 #			print("Found sol: " + str(res.x))
 #			print("Dist: " + str(optimize(res.x)))
-			if not res.success:
-				print("ERROR: Failed to find optimal inner point.")
+#			if not res.success:
+#				print("ERROR: Failed to find optimal inner point.")
 			if optimize(res.x) < best_sqdist:
 				best_t = res.x
 				best_sqdist = optimize(best_t)
@@ -58,6 +59,9 @@ def sectionize(base_path, filename):
 		sectionized.inner_paths[0].y += [best_track.y_cs(best_t)]
 	sectionized.inner_paths[0].t = track.outer_path.t
 	#Overwrite the final points with the original points. They should be the same anyway, but just make sure.
+	sectionized.inner_paths[0].x[-1] = sectionized.inner_paths[0].x[0]
+	sectionized.inner_paths[0].y[-1] = sectionized.inner_paths[0].y[0]
+	#Interpolate
 	sectionized.inner_paths[0].x_cs = CubicSpline(sectionized.inner_paths[0].t, sectionized.inner_paths[0].x, bc_type='periodic')
 	sectionized.inner_paths[0].y_cs = CubicSpline(sectionized.inner_paths[0].t, sectionized.inner_paths[0].y, bc_type='periodic')
 
