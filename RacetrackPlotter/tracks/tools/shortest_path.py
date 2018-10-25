@@ -13,16 +13,44 @@ import matplotlib.pyplot as plt
 from matplotlib import collections  as mc
 #from scipy.optimize import minimize_scalar
 from scipy.optimize import basinhopping
+#import threading
+import multiprocessing
+from multiprocessing import Pool
 
 base_path = '../data/gen/sectionized_tracks/'
 target_path = '../data/gen/shortest_path_tracks/'
 PLOT_PATH = '../images/gen/shortest_path_plots/'
-
+MAX_CONCURRENT = 6
 PLOT=True
 
-def main():	
+class runner(multiprocessing.Process):
+	def __init__(self, base_path, filename):
+		multiprocessing.Process.__init__(self)
+		self.base_path = base_path
+		self.filename = filename
+	def run(self):
+		find_shortest_path(self.base_path, self.filename)
+
+def main():
+	path_tuples = []
+	#Build filenames
 	for filename in os.listdir(base_path):
-		find_shortest_path(base_path, filename)
+		path_tuples += [(base_path, filename)]
+
+	#Run shortest path in a threadpool.
+	with Pool(4) as p:
+		p.map(short_path_wrapper, path_tuples)
+#	#Run runners, MAX_CONCURRENT at a time.
+#	for idx_base in range(len(runners))[::MAX_CONCURRENT]:
+#		print("IDX Base: "  + str(idx_base))
+#		#Run each runner.
+#		for idx in range(MAX_CONCURRENT):
+#			runners[idx_base+idx].start()
+#		#Join each runner.
+#		for idx in range(MAX_CONCURRENT):
+#			runners[idx].join()
+def short_path_wrapper(path_tuple):
+	find_shortest_path(path_tuple[0], path_tuple[1])
 
 def find_shortest_path(base_path, filename):
 	print(base_path+filename)
@@ -32,7 +60,7 @@ def find_shortest_path(base_path, filename):
 	guess = [0]*len(track.outer_path.t)
 	#Find the set of weights that correspond to the shortest path.
 	optimize = lambda x: track.shortest_path_len_sq(x)
-	res = basinhopping(optimize, guess, niter=1, minimizer_kwargs={"method" : "L-BFGS-B", "bounds" : bounds})
+	res = basinhopping(optimize, guess, niter=5, minimizer_kwargs={"method" : "L-BFGS-B", "bounds" : bounds})
 	for idx in range(len(res.x)):
 		track.sections[idx].shortest_pt = res.x[idx]
 	#Attempt to plot the data:
@@ -66,7 +94,7 @@ def plot(track, name):
 	
 	#Save and show
 	plt.savefig(PLOT_PATH+name+"ng")
-	plt.show()
+#	plt.show()
 
 	plt.clf()
 if __name__ == '__main__':
