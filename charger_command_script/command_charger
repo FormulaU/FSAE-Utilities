@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+from time import sleep
+import can
+
+G_CAN_INTERFACE="can0"
+
+def main():
+	bus = can.interface.Bus(G_CAN_INTERFACE, bustype='socketcan')
+	timeouts = [2, 5, 8]
+	while True:
+		print(timeouts)
+		sleep(min(timeouts))
+		minimum = min(timeouts)
+		timeouts = [num - minimum for num in timeouts]
+		if timeouts[0] == 0:
+			read_1()
+			timeouts[0] = 1
+		if timeouts[1] == 0:
+			read_2()
+			timeouts[1] = 4
+		if timeouts[2] == 0:
+			read_3()
+			timeouts[2] = 8
+
+if __name__=="__main__":
+	main()
