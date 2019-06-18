@@ -3,17 +3,21 @@
 #include <RMS_can_gen.h>
 #include <kinetis_flexcan.h>
 
-const int potPin = A15;
-const int potPin2 = A14;
+// Code for FSAE 2019, written by Austin Stevens and Aaron Morgan.
+
 const int brakePotPin = A16;
+const int potPin = A15; // 4-951
+const int potPin2 = A14; // 3-720
 const int led = 13;
 boolean carOn = false;
+
+int percentA15;
+int percentA14;
 
 struct CAN_message_t torqueMessage;
 struct CAN_message_t brakeMessage;
 struct CAN_message_t rxMsg;
 struct CAN_message_t dashMessage;
-struct CAN_message_t testMessage;
 
 // Method to clear the values of any given CAN message, depending on its length.
 void zeroize_message(CAN_message_t& torqueMessage, int length){
@@ -27,7 +31,6 @@ void setup() {
   pinMode(potPin, INPUT);
   pinMode(potPin2, INPUT);
   pinMode(brakePotPin, INPUT);
-  //pinMode(testPin, INPUT);
   pinMode(led, OUTPUT);
   Serial.begin(9600);
 }
@@ -36,9 +39,9 @@ void loop() {
 
   //Brakes:
 
-  int brakeRead = analogRead(brakePotPin); // Fully depressed is 415.
-  int minValue = 1023; // Read from brake at starting position
-  int percent = (brakeRead - minValue)/-6.08; // -6.08 is used for conversion to 0-100 percentage (415-1023/100-0);
+  int brakeRead = analogRead(brakePotPin); // Fully depressed is 400
+  int minValue = 3; // Read from brake at starting position
+  int percent = (brakeRead - minValue)/3.97; // 3.97 is used for conversion to 0-100 percentage (400-3/100-0);
   int16_t brakeValue = (int16_t) percent;
   
   digitalWrite(led, HIGH);
@@ -50,19 +53,9 @@ void loop() {
   brakeMessage.buf[0] = brakeValue;
   brakeMessage.buf[1] = brakeValue >> 8;
   Can0.write(brakeMessage); 
-
-  int16_t torqueValue = (int16_t) 0;
-  int16_t speed = 0;
-  bool direction = true;
-  bool enable = true;
-  bool discharge = false;
-  int16_t torque_limit = 0;
-
-  gen_cmd(&torqueMessage, torqueValue, speed, direction, enable, discharge, torque_limit);
-  Can0.write(torqueMessage);
   
   Can0.read(rxMsg);
-  delay(500);
+  delay(125);
 
     // Send the message to the controller to release the lock when the message from the dash is received.
     if(rxMsg.id == 326 && carOn == false){ // 326 is 0x146 in Hex.
@@ -74,7 +67,7 @@ void loop() {
       Can0.write(dashMessage);
       carOn = true;
     }
-    // Send the message to the controller to close the lock when the car is turned off.
+    // Send the message to the controller to close the lock when the dash signals that the car is turned off.
     if(rxMsg.id == 327 && carOn == true){ // 0x147 in Hex.
       torqueMessage.id = 0xC0;
       zeroize_message(torqueMessage, 8);
@@ -83,15 +76,13 @@ void loop() {
       Can0.write(dashMessage);
       carOn = false;
     }
-    
-    if(carOn == true){
-      //Pedal: One potentiometer reads from 3-967 (long, single wires), the second reads from 4-865 (shorter wires with connector).
+
+  if(carOn == true){
+      //Pedal:
   
-      int potValueA0 = analogRead(potPin);
-      int potValueA1 = analogRead(potPin2);
-      int percentA0 = (potValueA0 - 3)/9.64; // Analog read of A0 converted into a percentage of 0-100.
-      int percentA1 = (potValueA1 - 4)/8.61; // Analog read of A1 converted into a percentage of 0-100.
-      
+      int potValueA15 = analogRead(potPin);
+      int potValueA14 = analogRead(potPin2);
+
       int16_t torqueValue = (int16_t) 0;
       int16_t speed = 0;
       bool direction = true;
@@ -104,24 +95,31 @@ void loop() {
       
       digitalWrite(led, HIGH);
       delay(125);
-            
-      if(percentA1 >= 1){ //The potentiometer with the smaller range of reads has a deadzone for 20% of pedal travel, which needs to be accounted for.
-        int fixedA1 = (potValueA1 + 172); // Offsets the range by 20%
-        int scaledA1 = (fixedA1 + 41.25)*0.896631823; // Scales the read from that potentiometer to match the other potentiometer.
-    
-        int newPercentA1 = scaledA1/9.64; // This converts the new value to a percentage of 0-100.
-        
-        if(abs(percentA0 - newPercentA1) > 5){ // If the difference of the two percentages is greater than 5, then tell the controller to turn off.
+      
+      if(potValueA15 >= 315){ //The potentiometer with the smaller range of reads has a deadzone for a certain amount of pedal travel, which needs to be accounted for.
+
+         // THE FOLLOWING IS THE CODE AUSTIN WROTE AS A QUICK FIX
+         potValueA14 = potValueA14 + 250;
+         percentA15 = 100*(((double)potValueA15-5)/850);
+         percentA14 = 100*(((double)potValueA14-3)/723);
+         
+        if(abs(percentA15 - percentA14) > 5){ // If the difference of the two percentages is greater than 5, then tell the controller to turn off.
           torqueMessage.id = 0xC0;
           zeroize_message(torqueMessage, 8);
           Can0.write(torqueMessage);
           carOn = false;
+        }  
+        else{
+         torqueValue = (int16_t) (percentA15 + percentA14)/2;
+         gen_cmd(&torqueMessage, torqueValue, speed, direction, enable, discharge, torque_limit);
+         Can0.write(torqueMessage);
         }
-        else{ // Otherwise take the average of both percentages and use that as the CAN message.
-          torqueValue = (int16_t) (percentA0 + percentA1)/2;
-          gen_cmd(&torqueMessage, torqueValue, speed, direction, enable, discharge, torque_limit);
-          Can0.write(torqueMessage);
-        }
+        
+//        else{ // This else statement does not make sense, so I'm not sure why it's here. Why assign percentA14 if it's not used?
+//          percentA15 = 100*((double)(potValueA15-5)/850);
+//          percentA14 = percentA15;
+//          torqueValue = (int16_t) (percentA15);   
+//        }
         
         if(torqueValue > 25 && brakeValue > 0){ // Generate a stop message to the controller if there is more than 25% pedal travel and the brakes are being used at the same time.
             torqueMessage.id = 0xC0;
@@ -129,8 +127,9 @@ void loop() {
             Can0.write(torqueMessage);
             carOn = false;
         }
-      }
-    digitalWrite(led, LOW);
-    delay(125);
-    }
+      }  
+  digitalWrite(led, LOW);
+  delay(125);
+  }   
 }
+  

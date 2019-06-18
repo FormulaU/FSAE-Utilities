@@ -1,6 +1,8 @@
 #include <FlexCAN.h>
 #include <kinetis_flexcan.h>
 
+// Code for FSAE 2019, written by Austin Stevens and Aaron Morgan.
+
 int buttonPin = 1;     
 int lightPin = 2;
 int teensyLightPin = 13;       
@@ -80,18 +82,20 @@ void loop()
     delay(3000);
   }
 
-  if(carOn == true && msg.id == 0x148 && msg.buf[0] <= 50 && msg.buf[0] > 25){ // Will need to update the ID with something else to match Josh's CAN message for the battery. Doublecheck that he's going to fill buf[0].
-    digitalWrite(lightPin, LOW);
-    delay(1000);
-    digitalWrite(lightPin, HIGH);
-    delay(4000);
-  }
+// This commented section is to get the LED from the start button to flash, depending on the battery level.
 
-  if(carOn == true && msg.id = 0x149 && msg.buf[0] <= 25){ // Same as above.
-    digitalWrite(lightPin, LOW);
-    delay(500);
-    digitalWrite(lightPin, HIGH);
-    delay(1000);
-  }
+//  if(carOn == true && msg.id == 0x148 && msg.buf[0] <= 50 && msg.buf[0] > 25){ // Will need to update the ID with something else to match Josh's CAN message for the battery. Doublecheck that he's going to fill buf[0].
+//    digitalWrite(lightPin, LOW);
+//    delay(1000);
+//    digitalWrite(lightPin, HIGH);
+//    delay(4000);
+//  }
+//
+//  if(carOn == true && msg.id = 0x149 && msg.buf[0] <= 25){ // Same as above.
+//    digitalWrite(lightPin, LOW);
+//    delay(500);
+//    digitalWrite(lightPin, HIGH);
+//    delay(1000);
+//  }
  
 }
