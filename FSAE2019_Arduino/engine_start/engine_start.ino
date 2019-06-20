@@ -30,6 +30,17 @@ void setup()
 
 void loop()
 {
+  digitalWrite(lightPin, HIGH);
+  // LED if the car is OFF
+  if (!carOn)
+  {
+    digitalWrite(teensyLightPin, HIGH);
+  }
+  else
+  {
+    digitalWrite(teensyLightPin, HIGH);
+  }
+  
   // read a message
   Can0.read(msg);
     
@@ -50,7 +61,7 @@ void loop()
     sendingStart = false;
   }
   if(msg.id == 0x15F){
-    sendingStop = false);
+    sendingStop = false;
   }
 
   if(brakePressed && carOn == false && reading == HIGH){  
@@ -66,6 +77,7 @@ void loop()
   
     digitalWrite(lightPin, HIGH);
     delay(500); 
+    digitalWrite(teensyLightPin, LOW);
   }
   else if(reading == HIGH && carOn == true){
 
