@@ -10,7 +10,7 @@ const int potPin = A15; // 4-951
 const int potPin2 = A14; // 3-720
 const int led = 13;
 boolean carOn = false;
-int G_CAN_BAUD = 250000;
+long G_CAN_BAUD = 250000;
 boolean G_SERIAL_LOG = false;
 
 int percentA15;

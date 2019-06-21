@@ -5,12 +5,15 @@
 
 int buttonPin = 1;     
 int lightPin = 2;
-int teensyLightPin = 13;       
+int teensyLightPin = 13;
+int RTDSPin = 8;       
 int buttonState;           
 int lastButtonState = LOW; 
 boolean carOn = false;
 boolean sendingStart = false;
 boolean sendingStop = false;
+int G_CAN_BAUD = 250000;
+boolean G_SERIAL_LOG = false;
 
 unsigned long debounceDelay = 200; 
 unsigned long lastDebounceTime = 0;       
@@ -21,11 +24,17 @@ struct CAN_message_t stopMessage;
 
 void setup()
 {
-  Can0.begin(250000);
-  Serial.begin(9600);
+  if (G_SERIAL_LOG)
+  {
+    Serial.begin(9600);
+  }
+  Can0.begin(G_CAN_BAUD);
   pinMode(buttonPin, INPUT);
   pinMode(lightPin, OUTPUT);
   pinMode(teensyLightPin, OUTPUT);
+  pinMode(RTDSPin, OUTPUT);
+  // Ensure the RTDS starts low.
+  digitalWrite(RTDSPin, LOW);
 }
 
 void loop()
@@ -35,18 +44,21 @@ void loop()
   if (!carOn)
   {
     digitalWrite(teensyLightPin, HIGH);
+    digitalWrite(lightPin, LOW);
   }
   else
   {
-    digitalWrite(teensyLightPin, HIGH);
+    digitalWrite(teensyLightPin, LOW);
+    digitalWrite(lightPin, LOW);
   }
   
   // read a message
   Can0.read(msg);
     
   // check ID to see if brake message and if brake is pressed more than 50% of the way
-  boolean brakePressed = msg.id == 0x145 && msg.buf[0] > 50;
-
+  //boolean brakePressed = msg.id == 0x145 && msg.buf[0] > 50;
+  boolean brakePressed = true;
+  
   buttonState = digitalRead(buttonPin);
   int reading = digitalRead(buttonPin);
 
@@ -74,10 +86,12 @@ void loop()
     }
     sendingStart = true;    
     carOn = true;
-  
+
     digitalWrite(lightPin, HIGH);
-    delay(500); 
-    digitalWrite(teensyLightPin, LOW);
+    // Trigger the RTDS
+    digitalWrite(RTDSPin, HIGH);
+    delay(2000);
+    digitalWrite(RTDSPin, LOW);
   }
   else if(reading == HIGH && carOn == true){
 
