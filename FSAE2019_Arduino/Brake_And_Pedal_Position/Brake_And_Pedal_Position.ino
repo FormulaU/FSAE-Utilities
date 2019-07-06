@@ -12,6 +12,7 @@ const int led = 13;
 boolean carOn = false;
 long G_CAN_BAUD = 250000;
 boolean G_SERIAL_LOG = false;
+int G_LOOP_DELAY_MS = 125;
 
 int percentA15;
 int percentA14;
@@ -41,15 +42,14 @@ void setup() {
 }
 
 void loop() {
+  // Superloop delay: Frequency at which we send all messages.
+  digitalWrite(led, HIGH);
 
   //Brakes:
-
   int brakeRead = analogRead(brakePotPin); // Fully depressed is 400
   int minValue = 3; // Read from brake at starting position
   int percent = (brakeRead - minValue)/3.97; // 3.97 is used for conversion to 0-100 percentage (400-3/100-0);
   int16_t brakeValue = (int16_t) percent;
-  
-  digitalWrite(led, HIGH);
 
   // Writing brake CAN message.
   brakeMessage.id = 0x145; // This is 325 in decimal. This will need to be changed when we can use the Jettson
@@ -60,10 +60,8 @@ void loop() {
   Can0.write(brakeMessage); 
   
   Can0.read(rxMsg);
-  delay(125);
-
   // Send the message to the controller to release the lock when the message from the dash is received.
-  if(rxMsg.id == 326 && carOn == false){ // 326 is 0x146 in Hex.
+  if(rxMsg.id == 0x145 && carOn == false){ // 326 is 0x146 in Hex.
     torqueMessage.id = 0xC0; // This is 192 in decimal.
     torqueMessage.len = 8;
     zeroize_message(torqueMessage, 8);
@@ -73,7 +71,7 @@ void loop() {
     carOn = true;
   }
   // Send the message to the controller to close the lock when the dash signals that the car is turned off.
-  if(rxMsg.id == 327 && carOn == true){ // 0x147 in Hex.
+  else if(rxMsg.id == 0x146 && carOn == true){ // 327 is 0x147 in Hex.
     torqueMessage.id = 0xC0;
     zeroize_message(torqueMessage, 8);
     Can0.write(torqueMessage);
@@ -81,24 +79,17 @@ void loop() {
     Can0.write(dashMessage);
     carOn = false;
   }
-
-  if(carOn == true){
+  else if(carOn == true){
     //Pedal:
     int potValueA15 = analogRead(potPin);
     int potValueA14 = analogRead(potPin2);
 
-    int16_t torqueValue = (int16_t) 0;
+    int16_t torqueValue = 0;
     int16_t speed = 0;
     bool direction = true;
     bool enable = true;
     bool discharge = false;
     int16_t torque_limit = 0;
-    
-    gen_cmd(&torqueMessage, torqueValue, speed, direction, enable, discharge, torque_limit);
-    Can0.write(torqueMessage);
-      
-    digitalWrite(led, HIGH);
-    delay(125);
 
     //The potentiometer with the smaller range of reads has a deadzone for a certain amount of pedal travel, which needs to be accounted for.      
     if(potValueA15 >= 315){ 
@@ -119,12 +110,6 @@ void loop() {
        Can0.write(torqueMessage);
       }
         
-//        else{ // This else statement does not make sense, so I'm not sure why it's here. Why assign percentA14 if it's not used?
-//          percentA15 = 100*((double)(potValueA15-5)/850);
-//          percentA14 = percentA15;
-//          torqueValue = (int16_t) (percentA15);   
-//        }
-        
       if(torqueValue > 25 && brakeValue > 0){ // Generate a stop message to the controller if there is more than 25% pedal travel and the brakes are being used at the same time.
           torqueMessage.id = 0xC0;
           zeroize_message(torqueMessage, 8);
@@ -133,6 +118,6 @@ void loop() {
       }
     }  
   digitalWrite(led, LOW);
-  delay(125);
   }
+  delay(G_LOOP_DELAY_MS);
 }
