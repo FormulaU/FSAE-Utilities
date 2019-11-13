@@ -5,10 +5,10 @@ function pack_spacing() =
 
 function column_spacing(num_columns) = [
     // Build by column
-    for (col = [0 : g_cells_in_series-1])
+    for (col = [0 : num_columns-1])
         for (pt = single_column()) [pt[0] + horz_pos(col), pt[1]]
 ];
-        
+
 function single_column() = [
     for (row = [0 : g_cells_in_parallel-1])
         (row % 2 == 0) ?
