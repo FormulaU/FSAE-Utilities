@@ -53,30 +53,31 @@ module fuses()
     {
       rotate(a=atan(delta_y/delta_x))
       {
-        fuse(length);
+        fuse(length, g_fuse_width);
       }
     }
   }
 }
 
-module fuse(length)
+module fuse(length, fuse_width)
 {
   fuse_fideltiy = 10;
   end_width = g_fuse_width;
-  points = fuse_profile_pts(fuse_fideltiy);
-  echo(points)
-    translate(v=[0, -end_width/2, 0])
-    {
-      polygon(points=points);
-    }
+  fuse_pts = fuse_profile_pts(fuse_fideltiy, fuse_width);
+  scale(v=[length, 1, 0])
+  {
+    polygon(points=fuse_pts);
+  }
 }
 
-function fuse_profile_pts(pt_cnt)
-  = [for (i = [1:pt_cnt]) quadratic_fuse_profile(i/pt_cnt),
-  for (i = [1:pt_cnt]) y_reflect(quadratic_fuse_profile(i/pt_cnt))];
+function fuse_profile_pts(pt_cnt, fuse_width)
+  = [for (i = [0:pt_cnt]) quadratic_fuse_profile(i/pt_cnt, fuse_width),
+  for (i = [0:pt_cnt]) y_reflect(quadratic_fuse_profile((1-i/pt_cnt), fuse_width))];
 
 // The function that defines the profile of our fuses, evaluated from 0 to 1 along the length of the fuse.
-function quadratic_fuse_profile(x) = [x, g_fuse_width/2];
+function quadratic_fuse_profile(x, fuse_width) =
+  [x,
+  (min(g_neg_pad_diam, g_pos_pad_diam) - fuse_width/2) * pow((x-g_lat_fuse_pos), 2) + fuse_width/2];
 
 function y_reflect(pt) = [pt[0], -pt[1]];
 
